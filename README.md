@@ -47,7 +47,7 @@ Use `--image shopping-sessions:latest` in place of `--binary` for linux/amd64 Do
 
 Line-aligned chunks are parsed in parallel. Short ASCII IDs pack losslessly into integers and arbitrary UTF-8 IDs use a byte-exact interner. Link components choose their smallest original ID. Raw event parsing can proceed while the link graph is built because global event selection is independent of identity resolution.
 
-Events with the same ID route to the same worker partition. A two-bit occupancy filter identifies entries that were seen exactly once. All ambiguous entries use full-ID equality and minimum ingest time. An invalid earliest event suppresses every later copy. The winning events then group by canonical person and timestamp.
+Event parsing keeps payloads in input order. Each chunk groups 16-byte records containing the event ID, ingest time and original row position into one contiguous allocation. Workers deduplicate those records by ID. A two-bit filter proves which IDs appeared once. An exact map selects the earliest ingest for the remaining IDs, including invalid winners. Workers return the losing row positions, and each surviving payload goes directly to its canonical person’s partition.
 
 For each person, two cursors maintain the inclusive seven-day click window. An active-campaign list counts each assisting campaign once. The latest timestamp and smallest original click ID determine credit. Identical click copies have the same lifetime and campaign and therefore leave both outputs unchanged. Day and purchase category totals use the session's UTC start date.
 

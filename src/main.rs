@@ -123,22 +123,28 @@ fn event_row(row: &[u8], cat: &Catalog, keys: &Keys) -> Option<Candidate> {
     Some(Candidate { id, ingest, event })
 }
 
-fn ingest_events(dir: &Path, cat: &Catalog, keys: &Keys) -> Result<Vec<Vec<Vec<Candidate>>>> {
+type ParsedEvents = (Vec<Vec<Event>>, Vec<dedup::ChunkMeta>);
+fn ingest_events(dir: &Path, cat: &Catalog, keys: &Keys) -> Result<ParsedEvents> {
     let files = Parts::read(dir)?;
-    let batches = files
+    let parsed = files
         .chunks(BLOCK)
         .into_par_iter()
         .map(|bytes| {
-            let mut parts = bins(bytes.len() / 75 / BUCKETS + 1);
+            let approx = bytes.len() / 75;
+            let mut events = Vec::with_capacity(approx + 64);
+            let mut ids = Vec::with_capacity(approx + 64);
+            let mut counts = [0; dedup::SHARDS];
             input::lines(bytes, |line| {
                 if let Some(row) = event_row(line, cat, keys) {
-                    parts[bucket(row.id)].push(row)
+                    counts[dedup::shard(row.id)] += 1;
+                    ids.push(dedup::IdRecord::new(row.id, row.ingest, events.len()));
+                    events.push(row.event);
                 }
             });
-            parts
+            (events, dedup::ChunkMeta::scatter(ids, counts))
         })
-        .collect();
-    Ok(group_buckets(batches))
+        .unzip();
+    Ok(parsed)
 }
 
 fn ingest_clicks(
@@ -208,11 +214,7 @@ fn run(data: &Path, out: &Path) -> Result<()> {
     let raw = raw?;
     let (aliases, clicks) = linked_clicks?;
     mark("links, parse and partition");
-    let events = group_buckets(
-        raw.into_par_iter()
-            .map(|parts| dedup::winners(parts, &aliases))
-            .collect(),
-    );
+    let events = dedup::partition(raw.0, raw.1, &aliases);
     drop(aliases);
     mark("event dedup and repartition");
     let totals: Vec<_> = events
