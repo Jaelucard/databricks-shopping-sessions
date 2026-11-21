@@ -1,0 +1,9 @@
+/target/
+/out/
+/dev/
+/dev-answer/
+/fixtures/
+/scratch/
+__pycache__/
+
+/local.mk
