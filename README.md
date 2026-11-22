@@ -53,4 +53,12 @@ For each person, two cursors maintain the inclusive seven-day click window. An a
 
 [Local 20M benchmark results](BENCHMARKS.md)
 
+## License & Credits
+
+This project is released under the [MIT License](LICENSE).
+
+Open-source dependencies and resources used:
+- [memchr](https://github.com/BurntSushi/memchr), [memmap2](https://github.com/RazrFalcon/memmap2-rs), [parquet](https://github.com/apache/arrow-rs), [rayon](https://github.com/rayon-rs/rayon), [rustc-hash](https://github.com/rust-lang/rustc-hash), [serde](https://github.com/serde-rs/serde), and [serde_json](https://github.com/serde-rs/json) (see [`Cargo.toml`](Cargo.toml) and [`Cargo.lock`](Cargo.lock))
+- Builders Buildathon Shopping Sessions track specification and starter resources ([joinbuilders.org](https://www.joinbuilders.org/buildathon/tracks/shopping-sessions))
+
 Created in [T3 Code](https://t3.codes).
